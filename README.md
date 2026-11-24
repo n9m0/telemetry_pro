@@ -86,7 +86,9 @@ Every metric includes its value, unit, quality (`measured`, `calculated`, `estim
 - Inference session history is capped at 200 requests in `~/.mac-system-monitor/llm-history.json`.
 - Benchmark history is capped at 100 results in `~/.mac-system-monitor/benchmark-history.json`.
 - History files are created with owner-only permissions. Clearing inference history is available from **Model performance**.
-- Ollama proxy targets are fixed to the validated loopback host; request paths are restricted to `/api/*`.
+- Ollama proxy targets are fixed to the validated loopback host; request paths are restricted to `/api/*`, and only `GET /api/tags|ps|version` and `POST /api/generate|chat|show|embed|embeddings` are forwarded. Model management routes (`pull`, `delete`, `create`, `copy`, `push`) are blocked; use Ollama directly for those.
+- Every request must carry a loopback `Host` (`127.0.0.1`, `localhost` or `[::1]` on the server port or `DEV_PORT`, default `5175`) and, if present, a matching `Origin`. This blocks DNS-rebinding and cross-origin browser access.
+- Process command lines are redacted for bearer/basic authorization values, URL credentials, secret-like flags and `KEY=value` arguments before they reach the API.
 
 ## Development And Validation
 

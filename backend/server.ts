@@ -10,6 +10,7 @@ import { MacCollector } from './collectors.js'
 import { SessionHistory } from './history.js'
 import { OllamaCollector } from './ollama.js'
 import { OllamaLogWatcher } from './ollama-log.js'
+import { isAllowedProxyRoute, requestGuard } from './request-guard.js'
 import type { Snapshot } from './types.js'
 import { metric, ollamaRequestMetrics } from '../src/shared/metrics.js'
 
@@ -108,6 +109,7 @@ const logWatcher = new OllamaLogWatcher(async ({ request, metrics }) => {
 })
 
 app.disable('x-powered-by')
+app.use(requestGuard(new Set([port, Number(process.env.DEV_PORT ?? 5175)])))
 app.use(express.json({ limit: '2mb' }))
 
 function publish(): void {
@@ -195,6 +197,10 @@ app.use('/ollama', async (request, response) => {
   const path = request.originalUrl.slice('/ollama'.length)
   if (!path.startsWith('/api/')) {
     response.status(404).json({ error: 'Only Ollama API routes are proxied.' })
+    return
+  }
+  if (!isAllowedProxyRoute(request.method, path)) {
+    response.status(403).json({ error: 'This Ollama API route is not available through the monitor proxy.' })
     return
   }
   const isInference = request.method === 'POST' && /^\/api\/(generate|chat)$/.test(path.split('?')[0])

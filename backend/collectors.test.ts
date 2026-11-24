@@ -21,6 +21,18 @@ describe('macOS collector parsers', () => {
     expect(rows[0].memoryBytes).toBe(2_457_600_000)
   })
 
+  it('redacts bearer tokens, URL credentials, secret flags and env-style arguments', () => {
+    const redacted = collectorInternals.redactCommand([
+      'curl -H "Authorization: Bearer abc123token" https://user:hunter2@example.com/x',
+      '--access-key AKIDVALUE1 -p s3cr3t DB_PASSWORD=pw1 --client-secret=csec ghp_abcdefghijklmnop',
+    ].join(' '))
+    for (const secret of ['abc123token', 'hunter2', 'AKIDVALUE1', 's3cr3t', 'pw1', 'csec', 'ghp_abcdefghijklmnop']) {
+      expect(redacted).not.toContain(secret)
+    }
+    expect(redacted).toContain('https://[redacted]@example.com/x')
+    expect(collectorInternals.redactCommand('ollama serve --port 11434')).toBe('ollama serve --port 11434')
+  })
+
   it('selects physical network counters and ignores virtual interfaces', () => {
     const parsed = collectorInternals.parseNetwork([
       'Name       Mtu   Network       Address            Ipkts Ierrs     Ibytes    Opkts Oerrs     Obytes  Coll',

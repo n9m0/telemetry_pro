@@ -40,26 +40,26 @@ function runtimeSeconds(value: string): number | null {
   return (Number(daysSplit[0] && daysSplit.length > 1 ? daysSplit[0] : 0) * 86400) + hours * 3600 + minutes * 60 + seconds
 }
 
+const secretWords = 'password|passwd|pass|pwd|token|secret|api[-_]?key|access[-_]?key|private[-_]?key|credential|auth|authorization'
+
 function redactCommand(command: string): string {
-  const fields = command.split(/\s+/)
+  const scrubbed = command
+    .replace(/\b((?:proxy-)?authorization)\s*[:=]\s*(?:(?:bearer|basic|token)\s+)?\S+/gi, '$1: [redacted]')
+    .replace(/\bbearer\s+\S+/gi, 'Bearer [redacted]')
+    .replace(/([a-z][a-z0-9+.-]*:\/\/)[^/\s@]+@/gi, '$1[redacted]@')
+    .replace(new RegExp(`((?:^|\\s)-{0,2}[\\w.-]*(?:${secretWords})[\\w.-]*=)\\S*`, 'gi'), '$1[redacted]')
+    .replace(/\b(?:sk-|ghp_|gho_|ghs_|github_pat_|xox[baprs]-|AKIA)[\w-]{8,}/g, '[redacted]')
+  const secretFlag = new RegExp(`^(?:--?[\\w-]*(?:${secretWords})[\\w-]*|-p)$`, 'i')
   const safe: string[] = []
   let redactNext = false
-  for (const field of fields) {
+  for (const field of scrubbed.split(/\s+/)) {
     if (redactNext) {
       safe.push('[redacted]')
       redactNext = false
       continue
     }
-    if (/^--?(?:password|passwd|token|api[-_]?key|secret|authorization|credential)$/i.test(field)) {
-      safe.push(field)
-      redactNext = true
-    } else if (/^--?(?:password|passwd|token|api[-_]?key|secret|authorization|credential)=/i.test(field)) {
-      safe.push(`${field.slice(0, field.indexOf('=') + 1)}[redacted]`)
-    } else if (/^authorization:\s*bearer\s+/i.test(field)) {
-      safe.push('Authorization: [redacted]')
-    } else {
-      safe.push(field)
-    }
+    safe.push(field)
+    redactNext = secretFlag.test(field)
   }
   return safe.join(' ')
 }
