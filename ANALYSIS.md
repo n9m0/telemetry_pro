@@ -75,10 +75,6 @@ Browser (React 19, Vite) ──SSE /api/stream──▶ Express server (127.0.0.
 ### 2.3 Quality
 - Strong test suite covering parsers, Ollama host policy, benchmark sequencing/
   cancellation/thermal-abort, log parsing, and metric math.
-- A written **constitution** (`.specify/memory/constitution.md`) codifies five
-  principles: local-first privacy, provenance-bearing metrics, safe system
-  integration, failure isolation, and behavior-preserving verified changes. The
-  implementation is consistent with all five.
 
 ---
 
